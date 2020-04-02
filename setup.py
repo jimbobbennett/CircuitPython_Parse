@@ -50,6 +50,6 @@ setup(
     # TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
     #       CHANGE `py_modules=['...']` TO `packages=['...']`
     py_modules=["circuitpython_parse"],
-    test_suite='nose.collector',
-    tests_require=['nose'],
+    test_suite="nose.collector",
+    tests_require=["nose"],
 )
