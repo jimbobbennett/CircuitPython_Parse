@@ -9,7 +9,7 @@ Introduction
     :target: https://discord.gg/nBQh6qu
     :alt: Discord
 
-.. image:: https://github.com/jimbobbennett/Circuitpython_CircuitPython_Parse/workflows/Build%20CI/badge.svg
+.. image:: https://github.com/jimbobbennett/CircuitPython_Parse/workflows/Build%20CI/badge.svg
     :target: https://github.com/jimbobbennett/Circuitpython_CircuitPython_Parse/actions
     :alt: Build Status
 
