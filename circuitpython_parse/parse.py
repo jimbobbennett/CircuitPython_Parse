@@ -29,7 +29,6 @@ test_urlparse.py provides a good indicator of parsing behavior.
 
 import sys
 from collections import namedtuple
-from typing import NoReturn
 from . import defaultdict
 
 # pylint: disable=C0115
@@ -825,6 +824,7 @@ class Quoter(defaultdict.defaultdict):
     # of cached keys don't call Python code at all).
     def __init__(self, safe):
         """safe: bytes object."""
+        super(Quoter, self).__init__()
         self.safe = _ALWAYS_SAFE.union(safe)
 
     def __missing__(self, b):
