@@ -29,7 +29,8 @@ test_urlparse.py provides a good indicator of parsing behavior.
 
 import sys
 from collections import namedtuple
-import defaultdict
+from typing import NoReturn
+from . import defaultdict
 
 # pylint: disable=C0115
 # pylint: disable=C0116
@@ -659,7 +660,6 @@ def unquote_to_bytes(string):
             append(item)
     return b"".join(res)
 
-
 def unquote(string, encoding="utf-8", errors="replace"):
     """Replace %xx escapes by their single-character equivalent. The optional
     encoding and errors parameters specify how to decode percent-encoded
@@ -681,22 +681,22 @@ def unquote(string, encoding="utf-8", errors="replace"):
     if errors is None:
         errors = "replace"
 
-    bits = []
     current_string = ""
-    for char in string:
-        if ord(char) <= 0x7F:
-            if len(current_string) > 0:
-                bits.append(current_string)
-                current_string = ""
+    str_pos = 0
+
+    while str_pos < len(string):
+        char = string[str_pos]
+
+        if char == '%':
+            part = char + string[str_pos+1] + string[str_pos+2]
+            decoded_part = unquote_to_bytes(part).decode(encoding, errors)
+            current_string = current_string + decoded_part
+            str_pos = str_pos + 3
         else:
             current_string = current_string + char
+            str_pos = str_pos + 1
 
-    res = [bits[0]]
-    append = res.append
-    for i in range(1, len(bits), 2):
-        append(unquote_to_bytes(bits[i]).decode(encoding, errors))
-        append(bits[i + 1])
-    return "".join(res)
+    return current_string
 
 
 # pylint: disable=C0103
@@ -825,10 +825,6 @@ class Quoter(defaultdict.defaultdict):
     def __init__(self, safe):
         """safe: bytes object."""
         self.safe = _ALWAYS_SAFE.union(safe)
-
-    def __repr__(self):
-        # Without this, will just display as a defaultdict
-        return "<%s %r>" % (self.__class__.__name__, dict(self))
 
     def __missing__(self, b):
         # Handle a cache miss. Store quoted string in cache and return.
