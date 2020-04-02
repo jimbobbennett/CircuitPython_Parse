@@ -1,4 +1,4 @@
-"""Parse (absolute and relative) URLs.
+"""Parse (absolute and relative) URLs, tweaked to work with CircuitPython
 
 urlparse module is based upon the following RFC specifications.
 
@@ -29,7 +29,6 @@ test_urlparse.py provides a good indicator of parsing behavior.
 
 import sys
 from collections import namedtuple
-import unicodedata
 import defaultdict
 
 # pylint: disable=C0115
@@ -453,7 +452,7 @@ def _checknetloc(netloc):
     n = n.replace(":", "")  # but not the surrounding text
     n = n.replace("#", "")
     n = n.replace("?", "")
-    netloc2 = unicodedata.normalize("NFKC", n)
+    netloc2 = n
     if n == netloc2:
         return
     for char in "/?#@:":
