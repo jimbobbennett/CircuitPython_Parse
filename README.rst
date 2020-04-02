@@ -62,18 +62,18 @@ Usage Example
 
 Parse a URL.
 
-```python
-url = "https://docs.microsoft.com/Learn"
+.. code-block:: python
 
-scheme, netloc, path, params, query, fragment = parse.urlparse(url)
+    url = "https://docs.microsoft.com/Learn"
 
-print("Scheme", scheme)
-print("Netloc", netloc)
-print("Path", path)
-print("Params", params)
-print("Query", query)
-print("Fragment", fragment)
-```
+    scheme, netloc, path, params, query, fragment = parse.urlparse(url)
+
+    print("Scheme", scheme)
+    print("Netloc", netloc)
+    print("Path", path)
+    print("Params", params)
+    print("Query", query)
+    print("Fragment", fragment)
 
 Contributing
 ============
