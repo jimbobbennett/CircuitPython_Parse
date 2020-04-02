@@ -1,4 +1,5 @@
 """Parse (absolute and relative) URLs, tweaked to work with CircuitPython
+==========================================================================================
 
 urlparse module is based upon the following RFC specifications.
 
@@ -904,18 +905,6 @@ def quote(string, safe="/", encoding=None, errors=None):
     different set of reserved characters that must be quoted. The
     quote function offers a cautious (not minimal) way to quote a
     string for most of these parts.
-
-    RFC 3986 Uniform Resource Identifier (URI): Generic Syntax lists
-    the following (un)reserved characters.
-
-    unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-    reserved      = gen-delims / sub-delims
-    gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
-    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
-                  / "*" / "+" / "," / ";" / "="
-
-    Each of the reserved characters is reserved in some component of a URL,
-    but not necessarily in all of them.
 
     The quote function %-escapes all characters that are neither in the
     unreserved chars ("always safe") nor the additional chars set via the
