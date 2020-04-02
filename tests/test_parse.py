@@ -1,7 +1,7 @@
 import sys
 import unicodedata
 import unittest
-import circuitpython_parse.parse as parse
+import circuitpython_parse as parse
 
 RFC1808_BASE = "http://a/b/c/d;p?q#f"
 RFC2396_BASE = "http://a/b/c/d;p?q"

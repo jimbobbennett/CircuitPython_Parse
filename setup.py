@@ -49,7 +49,7 @@ setup(
     # simple. Or you can use find_packages().
     # TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
     #       CHANGE `py_modules=['...']` TO `packages=['...']`
-    packages=["circuitpython_parse"],
+    py_modules=["circuitpython_parse"],
     # test_suite="nose.collector",
     # tests_require=["nose"],
 )
