@@ -28,9 +28,8 @@ test_urlparse.py provides a good indicator of parsing behavior.
 """
 
 import sys
-import collections
+from collections import namedtuple
 import defaultdict
-import adafruit_logging as logging
 
 __all__ = [
     "urlparse",
@@ -289,9 +288,6 @@ class _NetlocResultMixinBytes(_NetlocResultMixinBase, _ResultMixinBytes):
         if not port:
             port = None
         return hostname, port
-
-
-from collections import namedtuple
 
 _DefragResultBase = namedtuple("DefragResult", "url fragment")
 _SplitResultBase = namedtuple("SplitResult", "scheme netloc path query fragment")
@@ -608,8 +604,8 @@ def urldefrag(url):
     return _coerce_result(DefragResult(defrag, frag))
 
 
-_hexdig = "0123456789ABCDEFabcdef"
-_hextobyte = None
+HEX_DIG = "0123456789ABCDEFabcdef"
+HEX_TO_BYTE = None
 
 
 def unquote_to_bytes(string):
@@ -629,12 +625,12 @@ def unquote_to_bytes(string):
     append = res.append
     # Delay the initialization of the table to not waste memory
     # if the function is never called
-    global _hextobyte
-    if _hextobyte is None:
-        _hextobyte = {(a + b).encode(): bytes.fromhex(a + b) for a in _hexdig for b in _hexdig}
+    global HEX_TO_BYTE
+    if HEX_TO_BYTE is None:
+        HEX_TO_BYTE = {(a + b).encode(): bytes.fromhex(a + b) for a in HEX_DIG for b in HEX_DIG}
     for item in bits[1:]:
         try:
-            append(_hextobyte[item[:2]])
+            append(HEX_TO_BYTE[item[:2]])
             append(item[2:])
         except KeyError:
             append(b"%")
@@ -942,7 +938,7 @@ def urlencode(query, doseq=False, safe="", encoding=None, errors=None, quote_via
             # allowed empty dicts that type of behavior probably should be
             # preserved for consistency
         except TypeError:
-            ty, va, tb = sys.exc_info()
+            _, _, tb = sys.exc_info()
             raise TypeError("not a valid non-string sequence " "or mapping object").with_traceback(tb)
 
     l = []
@@ -974,7 +970,7 @@ def urlencode(query, doseq=False, safe="", encoding=None, errors=None, quote_via
             else:
                 try:
                     # Is this a sufficient test for sequence-ness?
-                    x = len(v)
+                    _ = len(v)
                 except TypeError:
                     # not a sequence
                     v = quote_via(str(v), safe, encoding, errors)

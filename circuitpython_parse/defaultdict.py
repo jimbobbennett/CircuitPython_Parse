@@ -16,12 +16,12 @@ class defaultdict:
         try:
             return self.d[key]
         except KeyError:
-            v = self.__missing__(key)
-            self.d[key] = v
-            return v
+            val = self.__missing__(key)
+            self.d[key] = val
+            return val
 
-    def __setitem__(self, key, v):
-        self.d[key] = v
+    def __setitem__(self, key, val):
+        self.d[key] = val
 
     def __delitem__(self, key):
         del self.d[key]
