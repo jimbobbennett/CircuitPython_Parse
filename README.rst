@@ -60,7 +60,20 @@ To install in a virtual environment in your current project:
 Usage Example
 =============
 
-.. todo:: Add a quick, simple example. It and other examples should live in the examples folder and be included in docs/examples.rst.
+Parse a URL.
+
+```python
+url = "https://docs.microsoft.com/Learn"
+
+scheme, netloc, path, params, query, fragment = parse.urlparse(url)
+
+print("Scheme", scheme)
+print("Netloc", netloc)
+print("Path", path)
+print("Params", params)
+print("Query", query)
+print("Fragment", fragment)
+```
 
 Contributing
 ============
