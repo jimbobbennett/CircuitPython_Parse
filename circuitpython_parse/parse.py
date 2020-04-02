@@ -660,6 +660,7 @@ def unquote_to_bytes(string):
             append(item)
     return b"".join(res)
 
+
 def unquote(string, encoding="utf-8", errors="replace"):
     """Replace %xx escapes by their single-character equivalent. The optional
     encoding and errors parameters specify how to decode percent-encoded
@@ -687,8 +688,8 @@ def unquote(string, encoding="utf-8", errors="replace"):
     while str_pos < len(string):
         char = string[str_pos]
 
-        if char == '%':
-            part = char + string[str_pos+1] + string[str_pos+2]
+        if char == "%":
+            part = char + string[str_pos + 1] + string[str_pos + 2]
             decoded_part = unquote_to_bytes(part).decode(encoding, errors)
             current_string = current_string + decoded_part
             str_pos = str_pos + 3
