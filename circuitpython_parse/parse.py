@@ -29,7 +29,11 @@ test_urlparse.py provides a good indicator of parsing behavior.
 
 import sys
 from collections import namedtuple
+import unicodedata
 import defaultdict
+
+# pylint: disable=C0115
+# pylint: disable=C0116
 
 __all__ = [
     "urlparse",
@@ -59,7 +63,7 @@ __all__ = [
 # The empty string classifies URLs with no scheme specified,
 # being the default value returned by “urlsplit” and “urlparse”.
 
-uses_relative = [
+USES_RELATIVE = [
     "",
     "ftp",
     "http",
@@ -81,7 +85,7 @@ uses_relative = [
     "wss",
 ]
 
-uses_netloc = [
+USES_NETLOC = [
     "",
     "ftp",
     "http",
@@ -109,29 +113,28 @@ uses_netloc = [
     "wss",
 ]
 
-uses_params = ["", "ftp", "hdl", "prospero", "http", "imap", "https", "shttp", "rtsp", "rtspu", "sip", "sips", "mms", "sftp", "tel"]
+USES_PARAMS = ["", "ftp", "hdl", "prospero", "http", "imap", "https", "shttp", "rtsp", "rtspu", "sip", "sips", "mms", "sftp", "tel"]
 
 # These are not actually used anymore, but should stay for backwards
 # compatibility.  (They are undocumented, but have a public-looking name.)
 
-non_hierarchical = ["gopher", "hdl", "mailto", "news", "telnet", "wais", "imap", "snews", "sip", "sips"]
+NON_HIERARCHICAL = ["gopher", "hdl", "mailto", "news", "telnet", "wais", "imap", "snews", "sip", "sips"]
 
-uses_query = ["", "http", "wais", "imap", "https", "shttp", "mms", "gopher", "rtsp", "rtspu", "sip", "sips"]
+USES_QUERY = ["", "http", "wais", "imap", "https", "shttp", "mms", "gopher", "rtsp", "rtspu", "sip", "sips"]
 
-uses_fragment = ["", "ftp", "hdl", "http", "gopher", "news", "nntp", "wais", "https", "shttp", "snews", "file", "prospero"]
+USES_FRAGMENT = ["", "ftp", "hdl", "http", "gopher", "news", "nntp", "wais", "https", "shttp", "snews", "file", "prospero"]
 
 # Characters valid in scheme names
-scheme_chars = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "+-."
+SCHEME_CHARS = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "+-."
 
-# XXX: Consider replacing with functools.lru_cache
 MAX_CACHE_SIZE = 20
-_parse_cache = {}
+PARSE_CACHE = {}
 
 
 def clear_cache():
     """Clear the parse cache and the quoters cache."""
-    _parse_cache.clear()
-    _safe_quoters.clear()
+    PARSE_CACHE.clear()
+    SAFE_QUOTERS.clear()
 
 
 # Helpers for bytes handling
@@ -140,19 +143,19 @@ def clear_cache():
 # decoding and encoding. If valid use cases are
 # presented, we may relax this by using latin-1
 # decoding internally for 3.3
-_implicit_encoding = "ascii"
-_implicit_errors = "strict"
+IMPLICIT_ENCODING = "ascii"
+IMPLICIT_ERRORS = "strict"
 
 
 def _noop(obj):
     return obj
 
 
-def _encode_result(obj, encoding=_implicit_encoding, errors=_implicit_errors):
+def _encode_result(obj, encoding=IMPLICIT_ENCODING, errors=IMPLICIT_ERRORS):
     return obj.encode(encoding, errors)
 
 
-def _decode_args(args, encoding=_implicit_encoding, errors=_implicit_errors):
+def _decode_args(args, encoding=IMPLICIT_ENCODING, errors=IMPLICIT_ERRORS):
     return tuple(x.decode(encoding, errors) if x else "" for x in args)
 
 
@@ -174,39 +177,44 @@ def _coerce_args(*args):
 
 
 # Result objects are more helpful than simple tuples
-class _ResultMixinStr(object):
+class _ResultMixinStr:
     """Standard approach to encoding parsed results from str to bytes"""
 
     __slots__ = ()
 
     def encode(self, encoding="ascii", errors="strict"):
+        # pylint: disable=E1101,E1133
         return self._encoded_counterpart(*(x.encode(encoding, errors) for x in self))
 
 
-class _ResultMixinBytes(object):
+class _ResultMixinBytes:
     """Standard approach to decoding parsed results from bytes to str"""
 
     __slots__ = ()
 
     def decode(self, encoding="ascii", errors="strict"):
+        # pylint: disable=E1101,E1133
         return self._decoded_counterpart(*(x.decode(encoding, errors) for x in self))
 
 
-class _NetlocResultMixinBase(object):
+class _NetlocResultMixinBase:
     """Shared methods for the parsed result objects containing a netloc element"""
 
     __slots__ = ()
 
     @property
     def username(self):
+        # pylint: disable=E1101
         return self._userinfo[0]
 
     @property
     def password(self):
+        # pylint: disable=E1101
         return self._userinfo[1]
 
     @property
     def hostname(self):
+        # pylint: disable=E1101
         hostname = self._hostinfo[0]
         if not hostname:
             return None
@@ -218,6 +226,7 @@ class _NetlocResultMixinBase(object):
 
     @property
     def port(self):
+        # pylint: disable=E1101
         port = self._hostinfo[1]
         if port is not None:
             try:
@@ -225,6 +234,8 @@ class _NetlocResultMixinBase(object):
             except ValueError:
                 message = "Port could not be cast to integer value as {port}".format(port=port)
                 raise ValueError(message) from None
+
+            # pylint: disable=C0325
             if not (0 <= port <= 65535):
                 raise ValueError("Port out of range 0-65535")
         return port
@@ -235,8 +246,9 @@ class _NetlocResultMixinStr(_NetlocResultMixinBase, _ResultMixinStr):
 
     @property
     def _userinfo(self):
+        # pylint: disable=E1101
         netloc = self.netloc
-        userinfo, have_info, hostinfo = netloc.rpartition("@")
+        userinfo, have_info, _ = netloc.rpartition("@")
         if have_info:
             username, have_password, password = userinfo.partition(":")
             if not have_password:
@@ -247,6 +259,7 @@ class _NetlocResultMixinStr(_NetlocResultMixinBase, _ResultMixinStr):
 
     @property
     def _hostinfo(self):
+        # pylint: disable=E1101
         netloc = self.netloc
         _, _, hostinfo = netloc.rpartition("@")
         _, have_open_br, bracketed = hostinfo.partition("[")
@@ -265,8 +278,9 @@ class _NetlocResultMixinBytes(_NetlocResultMixinBase, _ResultMixinBytes):
 
     @property
     def _userinfo(self):
+        # pylint: disable=E1101
         netloc = self.netloc
-        userinfo, have_info, hostinfo = netloc.rpartition(b"@")
+        userinfo, have_info, _ = netloc.rpartition(b"@")
         if have_info:
             username, have_password, password = userinfo.partition(b":")
             if not have_password:
@@ -277,6 +291,7 @@ class _NetlocResultMixinBytes(_NetlocResultMixinBase, _ResultMixinBytes):
 
     @property
     def _hostinfo(self):
+        # pylint: disable=E1101
         netloc = self.netloc
         _, _, hostinfo = netloc.rpartition(b"@")
         _, have_open_br, bracketed = hostinfo.partition(b"[")
@@ -289,6 +304,7 @@ class _NetlocResultMixinBytes(_NetlocResultMixinBase, _ResultMixinBytes):
             port = None
         return hostname, port
 
+
 _DefragResultBase = namedtuple("DefragResult", "url fragment")
 _SplitResultBase = namedtuple("SplitResult", "scheme netloc path query fragment")
 _ParseResultBase = namedtuple("ParseResult", "scheme netloc path params query fragment")
@@ -299,16 +315,18 @@ _ParseResultBase = namedtuple("ParseResult", "scheme netloc path params query fr
 ResultBase = _NetlocResultMixinStr
 
 # Structured result objects for string data
+# pylint: disable=C0115
 class DefragResult(_DefragResultBase, _ResultMixinStr):
     __slots__ = ()
 
     def geturl(self):
         if self.fragment:
             return self.url + "#" + self.fragment
-        else:
-            return self.url
+
+        return self.url
 
 
+# pylint: disable=C0115
 class SplitResult(_SplitResultBase, _NetlocResultMixinStr):
     __slots__ = ()
 
@@ -316,6 +334,7 @@ class SplitResult(_SplitResultBase, _NetlocResultMixinStr):
         return urlunsplit(self)
 
 
+# pylint: disable=C0115
 class ParseResult(_ParseResultBase, _NetlocResultMixinStr):
     __slots__ = ()
 
@@ -324,16 +343,18 @@ class ParseResult(_ParseResultBase, _NetlocResultMixinStr):
 
 
 # Structured result objects for bytes data
+# pylint: disable=C0115
 class DefragResultBytes(_DefragResultBase, _ResultMixinBytes):
     __slots__ = ()
 
     def geturl(self):
         if self.fragment:
             return self.url + b"#" + self.fragment
-        else:
-            return self.url
+
+        return self.url
 
 
+# pylint: disable=C0115
 class SplitResultBytes(_SplitResultBase, _NetlocResultMixinBytes):
     __slots__ = ()
 
@@ -341,6 +362,7 @@ class SplitResultBytes(_SplitResultBase, _NetlocResultMixinBytes):
         return urlunsplit(self)
 
 
+# pylint: disable=C0115
 class ParseResultBytes(_ParseResultBase, _NetlocResultMixinBytes):
     __slots__ = ()
 
@@ -356,6 +378,7 @@ def _fix_result_transcoding():
         (ParseResult, ParseResultBytes),
     )
     for _decoded, _encoded in _result_pairs:
+        # pylint: disable=W0212
         _decoded._encoded_counterpart = _encoded
         _encoded._decoded_counterpart = _decoded
 
@@ -387,7 +410,7 @@ def urlparse(url, scheme="", allow_fragments=True):
     url, scheme, _coerce_result = _coerce_args(url, scheme)
     splitresult = urlsplit(url, scheme, allow_fragments)
     scheme, netloc, url, query, fragment = splitresult
-    if scheme in uses_params and ";" in url:
+    if scheme in USES_PARAMS and ";" in url:
         url, params = _splitparams(url)
     else:
         params = ""
@@ -407,16 +430,16 @@ def _splitparams(url):
 
 def _splitnetloc(url, start=0):
     delim = len(url)  # position of end of domain part of url, default is end
-    for c in "/?#":  # look for delimiters; the order is NOT important
-        wdelim = url.find(c, start)  # find first of this delim
+    for char in "/?#":  # look for delimiters; the order is NOT important
+        wdelim = url.find(char, start)  # find first of this delim
         if wdelim >= 0:  # if found
             delim = min(delim, wdelim)  # use earliest delim position
     return url[start:delim], url[delim:]  # return (domain, rest)
 
 
 def isascii(string):
-    for i in range(len(string)):
-        if ord(string[i]) > 0x7F:
+    for char in string:
+        if ord(char) > 0x7F:
             return False
     return True
 
@@ -426,8 +449,6 @@ def _checknetloc(netloc):
         return
     # looking for characters like \u2100 that expand to 'a/c'
     # IDNA uses NFKC equivalence, so normalize for this check
-    import unicodedata
-
     n = netloc.replace("@", "")  # ignore characters already included
     n = n.replace(":", "")  # but not the surrounding text
     n = n.replace("#", "")
@@ -435,8 +456,8 @@ def _checknetloc(netloc):
     netloc2 = unicodedata.normalize("NFKC", n)
     if n == netloc2:
         return
-    for c in "/?#@:":
-        if c in netloc2:
+    for char in "/?#@:":
+        if char in netloc2:
             raise ValueError("netloc '" + netloc + "' contains invalid " + "characters under NFKC normalization")
 
 
@@ -464,16 +485,16 @@ def urlsplit(url, scheme="", allow_fragments=True):
     url, scheme, _coerce_result = _coerce_args(url, scheme)
     allow_fragments = bool(allow_fragments)
     key = url, scheme, allow_fragments, type(url), type(scheme)
-    cached = _parse_cache.get(key, None)
+    cached = PARSE_CACHE.get(key, None)
     if cached:
         return _coerce_result(cached)
-    if len(_parse_cache) >= MAX_CACHE_SIZE:  # avoid runaway growth
+    if len(PARSE_CACHE) >= MAX_CACHE_SIZE:  # avoid runaway growth
         clear_cache()
     netloc = query = fragment = ""
     i = url.find(":")
     if i > 0:
-        for c in url[:i]:
-            if c not in scheme_chars:
+        for char in url[:i]:
+            if char not in SCHEME_CHARS:
                 break
         else:
             scheme, url = url[:i].lower(), url[i + 1 :]
@@ -487,9 +508,9 @@ def urlsplit(url, scheme="", allow_fragments=True):
     if "?" in url:
         url, query = url.split("?", 1)
     _checknetloc(netloc)
-    v = SplitResult(scheme, netloc, url, query, fragment)
-    _parse_cache[key] = v
-    return _coerce_result(v)
+    val = SplitResult(scheme, netloc, url, query, fragment)
+    PARSE_CACHE[key] = val
+    return _coerce_result(val)
 
 
 def urlunparse(components):
@@ -510,7 +531,7 @@ def urlunsplit(components):
     was parsed originally had unnecessary delimiters (for example, a ? with an
     empty query; the RFC states that these are equivalent)."""
     scheme, netloc, url, query, fragment, _coerce_result = _coerce_args(*components)
-    if netloc or (scheme and scheme in uses_netloc and url[:2] != "//"):
+    if netloc or (scheme and scheme in USES_NETLOC and url[:2] != "//"):
         if url and url[:1] != "/":
             url = "/" + url
         url = "//" + (netloc or "") + url
@@ -532,12 +553,12 @@ def urljoin(base, url, allow_fragments=True):
         return base
 
     base, url, _coerce_result = _coerce_args(base, url)
-    bscheme, bnetloc, bpath, bparams, bquery, bfragment = urlparse(base, "", allow_fragments)
+    bscheme, bnetloc, bpath, bparams, bquery, _ = urlparse(base, "", allow_fragments)
     scheme, netloc, path, params, query, fragment = urlparse(url, bscheme, allow_fragments)
 
-    if scheme != bscheme or scheme not in uses_relative:
+    if scheme != bscheme or scheme not in USES_RELATIVE:
         return _coerce_result(url)
-    if scheme in uses_netloc:
+    if scheme in USES_NETLOC:
         if netloc:
             return _coerce_result(urlunparse((scheme, netloc, path, params, query, fragment)))
         netloc = bnetloc
@@ -596,8 +617,8 @@ def urldefrag(url):
     """
     url, _coerce_result = _coerce_args(url)
     if "#" in url:
-        s, n, p, a, q, frag = urlparse(url)
-        defrag = urlunparse((s, n, p, a, q, ""))
+        scheme, netloc, url_val, params, query, frag = urlparse(url)
+        defrag = urlunparse((scheme, netloc, url_val, params, query, ""))
     else:
         frag = ""
         defrag = url
@@ -614,6 +635,7 @@ def unquote_to_bytes(string):
     # unescaped non-ASCII characters, which URIs should not.
     if not string:
         # Is it a string-like object?
+        # pylint: disable=W0104
         string.split
         return b""
     if isinstance(string, str):
@@ -625,6 +647,7 @@ def unquote_to_bytes(string):
     append = res.append
     # Delay the initialization of the table to not waste memory
     # if the function is never called
+    # pylint: disable=W0603
     global HEX_TO_BYTE
     if HEX_TO_BYTE is None:
         HEX_TO_BYTE = {(a + b).encode(): bytes.fromhex(a + b) for a in HEX_DIG for b in HEX_DIG}
@@ -651,6 +674,7 @@ def unquote(string, encoding="utf-8", errors="replace"):
     if isinstance(string, bytes):
         return unquote_to_bytes(string).decode(encoding, errors)
     if "%" not in string:
+        # pylint: disable=W0104
         string.split
         return string
     if encoding is None:
@@ -660,8 +684,7 @@ def unquote(string, encoding="utf-8", errors="replace"):
 
     bits = []
     current_string = ""
-    for i in range(len(string)):
-        char = string[i]
+    for char in string:
         if ord(char) <= 0x7F:
             if len(current_string) > 0:
                 bits.append(current_string)
@@ -677,6 +700,7 @@ def unquote(string, encoding="utf-8", errors="replace"):
     return "".join(res)
 
 
+# pylint: disable=C0103
 def parse_qs(qs, keep_blank_values=False, strict_parsing=False, encoding="utf-8", errors="replace", max_num_fields=None):
     """Parse a query given as a string argument.
 
@@ -713,6 +737,7 @@ def parse_qs(qs, keep_blank_values=False, strict_parsing=False, encoding="utf-8"
     return parsed_result
 
 
+# pylint: disable=C0103
 def parse_qsl(qs, keep_blank_values=False, strict_parsing=False, encoding="utf-8", errors="replace", max_num_fields=None):
     """Parse a query given as a string argument.
 
@@ -753,20 +778,21 @@ def parse_qsl(qs, keep_blank_values=False, strict_parsing=False, encoding="utf-8
     for name_value in pairs:
         if not name_value and not strict_parsing:
             continue
-        nv = name_value.split("=", 1)
-        if len(nv) != 2:
+        split_name_value = name_value.split("=", 1)
+        if len(split_name_value) != 2:
             if strict_parsing:
                 raise ValueError("bad query field: %r" % (name_value,))
             # Handle case of a control-name with no equal sign
             if keep_blank_values:
-                nv.append("")
+                split_name_value.append("")
             else:
                 continue
-        if len(nv[1]) or keep_blank_values:
-            name = nv[0].replace("+", " ")
+        # pylint: disable=C1801
+        if len(split_name_value[1]) or keep_blank_values:
+            name = split_name_value[0].replace("+", " ")
             name = unquote(name, encoding=encoding, errors=errors)
             name = _coerce_result(name)
-            value = nv[1].replace("+", " ")
+            value = split_name_value[1].replace("+", " ")
             value = unquote(value, encoding=encoding, errors=errors)
             value = _coerce_result(value)
             r.append((name, value))
@@ -785,7 +811,7 @@ def unquote_plus(string, encoding="utf-8", errors="replace"):
 
 _ALWAYS_SAFE = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZ" b"abcdefghijklmnopqrstuvwxyz" b"0123456789" b"_.-~")
 _ALWAYS_SAFE_BYTES = bytes(_ALWAYS_SAFE)
-_safe_quoters = {}
+SAFE_QUOTERS = {}
 
 
 class Quoter(defaultdict.defaultdict):
@@ -884,27 +910,27 @@ def quote_plus(string, safe="", encoding=None, errors=None):
     return string.replace(" ", "+")
 
 
-def quote_from_bytes(bs, safe="/"):
+def quote_from_bytes(bytes_val, safe="/"):
     """Like quote(), but accepts a bytes object rather than a str, and does
     not perform string-to-bytes encoding.  It always returns an ASCII string.
     quote_from_bytes(b'abc def\x3f') -> 'abc%20def%3f'
     """
-    if not isinstance(bs, (bytes, bytearray)):
+    if not isinstance(bytes_val, (bytes, bytearray)):
         raise TypeError("quote_from_bytes() expected bytes")
-    if not bs:
+    if not bytes_val:
         return ""
     if isinstance(safe, str):
         # Normalize 'safe' by converting to bytes and removing non-ASCII chars
         safe = safe.encode("ascii", "ignore")
     else:
-        safe = bytes([c for c in safe if c < 128])
-    if not bs.rstrip(_ALWAYS_SAFE_BYTES + safe):
-        return bs.decode()
+        safe = bytes([char for char in safe if char < 128])
+    if not bytes_val.rstrip(_ALWAYS_SAFE_BYTES + safe):
+        return bytes_val.decode()
     try:
-        quoter = _safe_quoters[safe]
+        quoter = SAFE_QUOTERS[safe]
     except KeyError:
-        _safe_quoters[safe] = quoter = Quoter(safe).__getitem__
-    return "".join([quoter(char) for char in bs])
+        SAFE_QUOTERS[safe] = quoter = Quoter(safe).__getitem__
+    return "".join([quoter(char) for char in bytes_val])
 
 
 def urlencode(query, doseq=False, safe="", encoding=None, errors=None, quote_via=quote_plus):
@@ -931,6 +957,7 @@ def urlencode(query, doseq=False, safe="", encoding=None, errors=None, quote_via
         try:
             # non-sequence items should not work with len()
             # non-empty strings will fail this
+            # pylint: disable=C1801
             if len(query) and not isinstance(query[0], tuple):
                 raise TypeError
             # Zero-length sequences of all types will get here and succeed,
@@ -938,52 +965,52 @@ def urlencode(query, doseq=False, safe="", encoding=None, errors=None, quote_via
             # allowed empty dicts that type of behavior probably should be
             # preserved for consistency
         except TypeError:
-            _, _, tb = sys.exc_info()
-            raise TypeError("not a valid non-string sequence " "or mapping object").with_traceback(tb)
+            _, _, traceback = sys.exc_info()
+            raise TypeError("not a valid non-string sequence " "or mapping object").with_traceback(traceback)
 
-    l = []
+    lst = []
     if not doseq:
-        for k, v in query:
-            if isinstance(k, bytes):
-                k = quote_via(k, safe)
+        for key, val in query:
+            if isinstance(key, bytes):
+                key = quote_via(key, safe)
             else:
-                k = quote_via(str(k), safe, encoding, errors)
+                key = quote_via(str(key), safe, encoding, errors)
 
-            if isinstance(v, bytes):
-                v = quote_via(v, safe)
+            if isinstance(val, bytes):
+                val = quote_via(val, safe)
             else:
-                v = quote_via(str(v), safe, encoding, errors)
-            l.append(k + "=" + v)
+                val = quote_via(str(val), safe, encoding, errors)
+            lst.append(key + "=" + val)
     else:
-        for k, v in query:
-            if isinstance(k, bytes):
-                k = quote_via(k, safe)
+        for key, val in query:
+            if isinstance(key, bytes):
+                key = quote_via(key, safe)
             else:
-                k = quote_via(str(k), safe, encoding, errors)
+                key = quote_via(str(key), safe, encoding, errors)
 
-            if isinstance(v, bytes):
-                v = quote_via(v, safe)
-                l.append(k + "=" + v)
-            elif isinstance(v, str):
-                v = quote_via(v, safe, encoding, errors)
-                l.append(k + "=" + v)
+            if isinstance(val, bytes):
+                val = quote_via(val, safe)
+                lst.append(key + "=" + val)
+            elif isinstance(val, str):
+                val = quote_via(val, safe, encoding, errors)
+                lst.append(key + "=" + val)
             else:
                 try:
                     # Is this a sufficient test for sequence-ness?
-                    _ = len(v)
+                    _ = len(val)
                 except TypeError:
                     # not a sequence
-                    v = quote_via(str(v), safe, encoding, errors)
-                    l.append(k + "=" + v)
+                    val = quote_via(str(val), safe, encoding, errors)
+                    lst.append(key + "=" + val)
                 else:
                     # loop over the sequence
-                    for elt in v:
+                    for elt in val:
                         if isinstance(elt, bytes):
                             elt = quote_via(elt, safe)
                         else:
                             elt = quote_via(str(elt), safe, encoding, errors)
-                        l.append(k + "=" + elt)
-    return "&".join(l)
+                        lst.append(key + "=" + elt)
+    return "&".join(lst)
 
 
 def unwrap(url):

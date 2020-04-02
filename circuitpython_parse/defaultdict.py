@@ -1,10 +1,41 @@
+"""
+Default Dict Implementation.
+"""
+
+# pylint: disable=C0103
 class defaultdict:
+    """
+    Default Dict Implementation.
+
+    Defaultdcit that returns the key if the key is not found in dictionnary (see
+    unswap in karma-lib):
+    >>> d = defaultdict(default=lambda key: key)
+    >>> d['foo'] = 'bar'
+    >>> d['foo']
+    'bar'
+    >>> d['baz']
+    'baz'
+    DefaultDict that returns an empty string if the key is not found (see
+    prefix in karma-lib for typical usage):
+    >>> d = defaultdict(default=lambda key: '')
+    >>> d['foo'] = 'bar'
+    >>> d['foo']
+    'bar'
+    >>> d['baz']
+    ''
+    Representation of a default dict:
+    >>> defaultdict([('foo', 'bar')])
+    defaultdict(None, {'foo': 'bar'})
+    """
+
     @staticmethod
+    # pylint: disable=W0613
     def __new__(cls, default_factory=None, **kwargs):
         # Some code (e.g. urllib.urlparse) expects that basic defaultdict
         # functionality will be available to subclasses without them
         # calling __init__().
         self = super(defaultdict, cls).__new__(cls)
+        # pylint: disable=C0103
         self.d = {}
         return self
 
