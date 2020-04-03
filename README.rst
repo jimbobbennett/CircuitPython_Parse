@@ -19,6 +19,7 @@ Introduction
 
 Parse (absolute and relative) URLs.
 
+This code is taken from the [CPython Parse library](https://github.com/python/cpython/blob/master/Lib/urllib/parse.py), and tweaked to work under CircuitPython.
 
 Dependencies
 =============

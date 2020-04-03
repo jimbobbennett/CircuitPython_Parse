@@ -26,6 +26,9 @@ currently not entirely compliant with this RFC due to defacto
 scenarios for parsing, and for backward compatibility purposes, some
 parsing quirks from older RFCs are retained. The testcases in
 test_urlparse.py provides a good indicator of parsing behavior.
+
+This code was lifted from https://github.com/python/cpython/blob/master/Lib/urllib/parse.py
+and tweaked to work under CircuitPython
 """
 
 import sys
