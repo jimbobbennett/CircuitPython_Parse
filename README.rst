@@ -65,7 +65,7 @@ Parse a URL.
 
 .. code-block:: python
 
-    url = "https://docs.microsoft.com/Learn"
+    url = "https://docs.microsoft.com/Learn?WT.mc_id=academic-0000-jabenn"
 
     scheme, netloc, path, params, query, fragment = parse.urlparse(url)
 
