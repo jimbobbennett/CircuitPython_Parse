@@ -127,6 +127,7 @@ USES_QUERY = ["", "http", "wais", "imap", "https", "shttp", "mms", "gopher", "rt
 USES_FRAGMENT = ["", "ftp", "hdl", "http", "gopher", "news", "nntp", "wais", "https", "shttp", "snews", "file", "prospero"]
 
 # Characters valid in scheme names
+# pylint: disable=W1404
 SCHEME_CHARS = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "+-."
 
 MAX_CACHE_SIZE = 20
@@ -891,7 +892,7 @@ class Quoter(defaultdict):
     # of cached keys don't call Python code at all).
     def __init__(self, safe):
         """safe: bytes object."""
-        super(Quoter, self).__init__()
+        super().__init__()
         self.safe = _ALWAYS_SAFE.union(safe)
 
     def __missing__(self, b):
@@ -1016,6 +1017,7 @@ def urlencode(query, doseq=False, safe="", encoding=None, errors=None, quote_via
             # allowed empty dicts that type of behavior probably should be
             # preserved for consistency
         except TypeError:
+            # pylint: disable=W0707
             _, _, traceback = sys.exc_info()
             raise TypeError("not a valid non-string sequence " "or mapping object").with_traceback(traceback)
 
